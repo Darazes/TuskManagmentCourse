@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}
+	Home Page
+{% endblock %}
+{% block content %}
+<body>
+    <h1 class="board_title" id="boardTitle" style="cursor: pointer;">{{ board.title }}</h1>
+    {% for list in board.lists.all %}
+      <div class="list" id="list-{{ list.id }}" style="border: 1px solid #ccc; margin-bottom: 10px; padding: 10px;">
+        <h2 class="list_title">{{ list.title }}</h2>
+        <button class="delete-list-btn" data-list-id="{{ list.id }}">Удалить список</button>
+        <div class="task-list" id="task-list-{{ list.id }}">
+            {% for task in list.tasks.all %}
+              <div class="task" draggable="true" id="task-{{ task.id }}" style="border: 1px solid #999; margin: 5px; padding: 5px;">
+                <strong>{{ task.title }}</strong><br>
+                {{ task.description }}
+              </div>
+            {% endfor %}
+        </div>
+        <button class="add-task">Добавить карточку</button>
+      </div>
+    {% empty %}
+      <p>Нет списков</p>
+    {% endfor %}
+<button id="add-column">Добавить столбец</button>
+
+<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; border-radius:5px; width:300px; position:relative;">
+    <h3>Добавить задачу</h3>
+    <label>Название:<br>
+      <input type="text" id="task-title" style="width: 100%;">
+    </label><br><br>
+    <label>Описание:<br>
+      <textarea id="task-description" style="width: 100%;"></textarea>
+    </label><br><br>
+    <button id="save-task">Сохранить</button>
+    <button id="cancel-task" style="margin-left:10px;">Отмена</button>
+  </div>
+</div>
+
+<div id="taskListModal" style="display:none; position:fixed; top:0; left:0;
+  width:100%; height:100%; background:rgba(0,0,0,0.5);">
+  <div style="background:#fff; padding:20px; margin:100px auto; width:300px; position:relative;">
+    <h3>Новый список задач</h3>
+    <input type="text" id="taskListTitle" placeholder="Название списка">
+    <br><br>
+    <button id="saveTaskListBtn">Сохранить</button>
+    <button id="closeModalBtn">Закрыть</button>
+  </div>
+</div>
+
+<div id="editTitleModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+  <div style="background:#fff; margin: 10% auto; padding: 20px; width: 300px; border-radius: 5px; position: relative;">
+    <h3>Изменить название доски</h3>
+    <form id="editTitleForm">
+      <input type="text" id="newTitle" name="title" value="{{ board.title }}" style="width: 100%; padding: 5px; margin-bottom: 10px;">
+      <button type="submit">Сохранить</button>
+      <button type="button" id="closeBoardModalBtn">Отмена</button>
+    </form>
+  </div>
+</div>
+
+</body>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let draggedTask = null;
+    let currentListId = null;
+    const boardId = {{ board.id }};
+
+    // Обработчик кнопок "Добавить карточку"
+    document.querySelectorAll('.add-task').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const listDiv = e.target.closest('.list');
+            currentListId = listDiv.id.replace('list-', '');
+            openModal();
+        });
+    });
+
+    // Функция открытия модального окна
+    function openModal() {
+        document.getElementById('task-title').value = '';
+        document.getElementById('task-description').value = '';
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    // Закрытие модального окна
+    document.getElementById('cancel-task').addEventListener('click', () => {
+        document.getElementById('modal').style.display = 'none';
+    });
+
+    // Сохранение задачи
+    document.getElementById('save-task').addEventListener('click', () => {
+        const title = document.getElementById('task-title').value.trim();
+        const description = document.getElementById('task-description').value.trim();
+
+        if (!title) {
+            alert('Введите название задачи');
+            return;
+        }
+
+        // Отправляем запрос на сервер для создания задачи
+        fetch('/add-task/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                list_id: currentListId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Ошибка: ' + data.error);
+                return;
+            }
+            // Добавляем новую задачу в DOM
+            const taskListDiv = document.getElementById('task-list-' + currentListId);
+            const taskDiv = document.createElement('div');
+            taskDiv.className = 'task';
+            taskDiv.id = 'task-' + data.task_id;
+            taskDiv.draggable = true;
+            taskDiv.style.border = '1px solid #999';
+            taskDiv.style.margin = '5px';
+            taskDiv.style.padding = '5px';
+            taskDiv.innerHTML = `<strong>${title}</strong><br>${description}`;
+
+            // Инициализируем drag&drop обработчики для новой задачи
+            taskDiv.addEventListener('dragstart', e => {
+                draggedTask = taskDiv;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', taskDiv.id);
+                taskDiv.style.opacity = '0.5';
+            });
+            taskDiv.addEventListener('dragend', e => {
+                draggedTask = null;
+                taskDiv.style.opacity = '1';
+            });
+
+            taskListDiv.appendChild(taskDiv);
+            updateEmptyMessage(currentListId);
+
+            document.getElementById('modal').style.display = 'none';
+        })
+        .catch(() => {
+            alert('Ошибка при добавлении задачи');
+        });
+    });
+
+    const modal = document.getElementById('taskListModal');
+    const openBtn = document.getElementById('add-column');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const saveBtn = document.getElementById('saveTaskListBtn');
+
+    openBtn.onclick = () => modal.style.display = 'block';
+    closeBtn.onclick = () => modal.style.display = 'none';
+
+    saveBtn.onclick = () => {
+      const title = document.getElementById('taskListTitle').value.trim();
+      if(!title) {
+        alert('Введите название списка');
+        return;
+      }
+
+      fetch('/add-task-list/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')  // Функция для получения CSRF токена
+        },
+        body: JSON.stringify({
+                  title: title,
+                  board_id: boardId  // Обязательно передаём board_id
+              })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if(data.error) {
+          alert('Ошибка: ' + data.error);
+        } else {
+          //alert('Список добавлен: ' + data.title);
+          modal.style.display = 'none';
+          document.getElementById('taskListTitle').value = '';
+          location.reload();
+        }
+      })
+      .catch(() => alert('Ошибка при отправке запроса'));
+    };
+
+    document.querySelectorAll('.delete-list-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const listId = e.target.getAttribute('data-list-id');
+
+        if(confirm('Вы уверены, что хотите удалить этот список? Все задачи в нём будут удалены!')) {
+          fetch('/delete-list/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')  // функция getCookie должна быть определена
+            },
+            body: JSON.stringify({ list_id: listId })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if(data.success) {
+              // Удаляем список из DOM
+              const listDiv = document.getElementById('list-' + listId);
+              if(listDiv) listDiv.remove();
+            } else {
+              alert('Ошибка при удалении списка: ' + (data.error || 'неизвестная ошибка'));
+            }
+          })
+          .catch(() => alert('Ошибка при запросе на удаление списка'));
+        }
+      });
+    });
+
+    document.querySelectorAll('.list_title').forEach(titleEl => {
+      titleEl.style.cursor = 'pointer';
+
+      titleEl.addEventListener('click', function handler() {
+        const currentTitle = this.textContent;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentTitle;
+        input.style.width = '90%';
+
+        // Заменяем h2 на input
+        this.replaceWith(input);
+        input.focus();
+
+        // Сохранение результата
+        function save() {
+          const newTitle = input.value.trim() || 'Без названия';
+
+          // Создаем новый заголовок
+          const newTitleEl = document.createElement('h2');
+          newTitleEl.className = 'list_title';
+          newTitleEl.textContent = newTitle;
+          newTitleEl.style.cursor = 'pointer';
+
+          // Навешиваем обработчик клика заново
+          newTitleEl.addEventListener('click', handler);
+
+          input.replaceWith(newTitleEl);
+
+          // Отправляем данные на сервер для сохранения
+          fetch('/update-title', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ oldTitle: currentTitle, newTitle })
+          }).catch(err => console.error('Ошибка при сохранении:', err));
+        }
+
+        input.addEventListener('blur', save);
+
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            input.blur();
+          }
+          if (e.key === 'Escape') {
+            input.value = currentTitle;
+            input.blur();
+          }
+        });
+      });
+    });
+
+  const modalBoard = document.getElementById('editTitleModal');
+  const boardTitle = document.getElementById('boardTitle');
+  const closeBoardModalBtn = document.getElementById('closeBoardModalBtn');
+  const editForm = document.getElementById('editTitleForm');
+  const newTitleInput = document.getElementById('newTitle');
+
+  // Открыть модальное окно при клике на название доски
+  boardTitle.addEventListener('click', () => {
+    modalBoard.style.display = 'block';
+    newTitleInput.focus();
+  });
+
+  // Закрыть модалку по кнопке "Отмена"
+  closeBoardModalBtn.addEventListener('click', () => {
+    modalBoard.style.display = 'none';
+  });
+
+  // Закрытие при клике вне модального окна
+  window.addEventListener('click', (e) => {
+    if (e.target === modalBoard) {
+      modalBoard.style.display = 'none';
+    }
+  });
+
+  editForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    const newTitle = newTitleInput.value.trim();
+    if (!newTitle) {
+      alert('Название не может быть пустым');
+      return;
+    }
+
+    fetch('{% url "update_board_title" board.id %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ title: newTitle })
+    })
+    .then(response => {
+      if (response.ok) {
+        boardTitle.textContent = newTitle;
+        modalBoard.style.display = 'none';
+      } else {
+        alert('Ошибка при обновлении');
+      }
+    })
+    .catch(() => alert('Ошибка при обновлении'));
+  });
+
+    // Инициализация drag and drop для задач
+    document.querySelectorAll('.task').forEach(task => {
+        task.addEventListener('dragstart', e => {
+            draggedTask = task;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', task.id);
+            task.style.opacity = '0.5';
+        });
+
+        task.addEventListener('dragend', e => {
+            draggedTask = null;
+            task.style.opacity = '1';
+        });
+    });
+
+    // Инициализация drop зон (списки задач)
+    document.querySelectorAll('.task-list').forEach(taskList => {
+        taskList.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+
+        taskList.addEventListener('drop', e => {
+            e.preventDefault();
+            const taskId = e.dataTransfer.getData('text/plain');
+            const droppedTask = document.getElementById(taskId);
+            if (droppedTask && taskList !== droppedTask.parentNode) {
+                const oldListId = droppedTask.parentNode.id.replace('task-list-', '');
+                taskList.appendChild(droppedTask);
+                const newListId = taskList.id.replace('task-list-', '');
+
+                updateEmptyMessage(oldListId);
+                updateEmptyMessage(newListId);
+
+                updateTaskPosition(taskId, taskList.id, oldListId);
+            }
+        });
+    });
+
+    // Проверка наличия задач при загрузке и вывод сообщения "Нет задач" при необходимости
+    document.querySelectorAll('.task-list').forEach(taskList => {
+        const listId = taskList.id.replace('task-list-', '');
+        updateEmptyMessage(listId);
+    });
+
+    function updateTaskPosition(taskId, taskListId, oldListId) {
+        fetch('/update-task-position/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                task_id: taskId.replace('task-', ''),
+                new_list_id: taskListId.replace('task-list-', ''),
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Ошибка: ' + data.error);
+                return;
+            }
+            if (data.new_list_tasks_left !== undefined) {
+                const newListId = taskListId.replace('task-list-', '');
+                updateEmptyMessage(newListId, data.new_list_tasks_left);
+            }
+            if (data.old_list_tasks_left !== undefined) {
+                updateEmptyMessage(oldListId, data.old_list_tasks_left);
+            }
+        })
+        .catch(() => {
+            alert('Ошибка при обновлении позиции задачи');
+        });
+    }
+
+    function updateEmptyMessage(listId, tasksCount = null) {
+        const taskListDiv = document.getElementById('task-list-' + listId);
+        if (!taskListDiv) return;
+
+        if (tasksCount === null) {
+            tasksCount = taskListDiv.querySelectorAll('.task').length;
+        }
+
+        let emptyMsg = taskListDiv.querySelector('.empty-message');
+
+        if (tasksCount === 0) {
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('p');
+                emptyMsg.className = 'empty-message';
+                emptyMsg.textContent = 'Нет задач';
+                taskListDiv.appendChild(emptyMsg);
+            }
+        } else {
+            if (emptyMsg) {
+                emptyMsg.remove();
+            }
+            }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
