@@ -212,7 +212,7 @@ def loginPage(request):
                 # если существует пользователь с таким именем и паролем,
                 # то сохраняем авторизацию и делаем редирект
                 login(request, user)
-                return redirect('me')
+                return redirect('/')
             else:
                 # иначе возвращаем ошибку
                 form.add_error(None, 'Неверные данные!')

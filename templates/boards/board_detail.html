@@ -7,51 +7,58 @@
 {% endblock %}
 {% block content %}
 <body>
+<div class="div_title">
     <h1 class="board_title" id="boardTitle" style="cursor: pointer;">{{ board.title }}</h1>
+    <button id="add-column" class="btn btn-primary">Добавить список задач</button>
+</div>
+<div class="lists">
     {% for list in board.lists.all %}
       <div class="list" id="list-{{ list.id }}" style="border: 1px solid #ccc; margin-bottom: 10px; padding: 10px;">
-        <h2 class="list_title">{{ list.title }}</h2>
-        <button class="delete-list-btn" data-list-id="{{ list.id }}">Удалить список</button>
-        <div class="task-list" id="task-list-{{ list.id }}">
+          <h2 class="list_title" style=" margin-right: 20px">{{ list.title }}</h2>
+          <div class="task-list" id="task-list-{{ list.id }}">
 
-            {% for task in list.tasks.all %}
-              <div onclick="window.location.href='{% url 'task_detail' board.id task.id %}'" class="task" draggable="true" id="task-{{ task.id }}" style="border: 1px solid #999; margin: 5px; padding: 5px; cursor:pointer;">
-                <strong>{{ task.title }}</strong><br>
-                {{ task.description }}
-              </div>
-            {% endfor %}
+              {% for task in list.tasks.all %}
+                <div onclick="window.location.href='{% url 'task_detail' board.id task.id %}'" class="task" draggable="true" id="task-{{ task.id }}">
+                  <strong>{{ task.title }}</strong><br>
+                  {{ task.description }}
+                </div>
+              {% endfor %}
+          </div>
+          <div class="task-buttons">
+              <button class="add-task btn btn-primary">Добавить карточку</button>
+              <button class="delete-list-btn btn btn-primary" data-list-id="{{ list.id }}">Удалить список</button>
+          </div>
 
-        </div>
-        <button class="add-task">Добавить карточку</button>
       </div>
+
     {% empty %}
       <p>Нет списков</p>
     {% endfor %}
-<button id="add-column">Добавить столбец</button>
+</div>
 
 <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
     background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
   <div style="background:#fff; padding:20px; border-radius:5px; width:300px; position:relative;">
     <h3>Добавить задачу</h3>
     <label>Название:<br>
-      <input type="text" id="task-title" style="width: 100%;">
+      <input type="text" id="task-title" style="width: 100%;" class="form-control" required>
     </label><br><br>
     <label>Описание:<br>
-      <textarea id="task-description" style="width: 100%;"></textarea>
+      <textarea id="task-description" style="width: 100%;" class="form-control" required></textarea>
     </label><br><br>
-    <button id="save-task">Сохранить</button>
-    <button id="cancel-task" style="margin-left:10px;">Отмена</button>
+    <button id="save-task" class="btn btn-primary">Сохранить</button>
+    <button id="cancel-task" class="btn btn-primary" style="margin-left:10px;">Отмена</button>
   </div>
 </div>
 
 <div id="taskListModal" style="display:none; position:fixed; top:0; left:0;
   width:100%; height:100%; background:rgba(0,0,0,0.5);">
-  <div style="background:#fff; padding:20px; margin:100px auto; width:300px; position:relative;">
+  <div style="background:#fff; padding:20px; margin:100px auto; width:400px; position:relative; align-items: center">
     <h3>Новый список задач</h3>
-    <input type="text" id="taskListTitle" placeholder="Название списка">
-    <br><br>
-    <button id="saveTaskListBtn">Сохранить</button>
-    <button id="closeModalBtn">Закрыть</button>
+    <input type="text" id="taskListTitle" placeholder="Название списка" class="form-control" required>
+      <br>
+    <button id="saveTaskListBtn" class="btn btn-primary">Сохранить</button>
+    <button id="closeModalBtn" class="btn btn-primary">Закрыть</button>
   </div>
 </div>
 
@@ -67,6 +74,7 @@
 </div>
 
 </body>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     let draggedTask = null;
@@ -427,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!emptyMsg) {
                 emptyMsg = document.createElement('p');
                 emptyMsg.className = 'empty-message';
-                emptyMsg.textContent = 'Нет задач';
+                emptyMsg.textContent = 'В списке нету задач, создайте задачу или перенесите из другого списка';
                 taskListDiv.appendChild(emptyMsg);
             }
         } else {

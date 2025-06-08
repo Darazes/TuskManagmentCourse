@@ -1,0 +1,52 @@
+.lists{
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.div_title{
+    display: flex;
+    flex-wrap: wrap;
+    height: 100%;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.task-buttons{
+    text-align: center;
+}
+
+.list_boards{
+    font-size: 2em;
+    text-decoration: none;
+}
+
+.board_title{
+    text-align: center;
+    margin-right: 20px;
+}
+
+.list_title{
+    text-align: center;
+}
+
+.list{
+    margin-right: 10px;
+    flex: 0 0 calc(33% - 10px);
+}
+
+.task{
+    border: 2px solid #999; margin: 5px;
+    border-radius: 10px;
+    cursor:pointer;
+    padding: 10px 5px;
+}
+
+.empty-message{
+    padding: 10px 5px;
+    border: 2px solid #999;
+    border-radius: 10px;
+    margin: 5px;
+
+}
