@@ -21,12 +21,43 @@
         <li><strong>Date Ended:</strong> {{ task.dateEnded|date:"Y-m-d H:i" }}</li>
     </ul>
 
+    <button id="deleteTaskBtn" class="btn btn-sm btn-outline-danger delete-board-btn" s >
+      Удалить задачу
+    </button>
+
 
 <a href="{% url 'board_detail' board.id %}">← Назад к списку задач</a>
 
 <script>
     document.getElementById('id_status').addEventListener('change', function() {
         document.getElementById('statusForm').submit();
+    });
+
+    document.getElementById('id_status').addEventListener('change', function() {
+        document.getElementById('statusForm').submit();
+    });
+
+    document.getElementById('deleteTaskBtn').addEventListener('click', function() {
+        if (!confirm('Вы уверены, что хотите удалить эту задачу?')) return;
+
+        fetch("{% url 'delete_task' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({task_id: {{ task.id }}})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Перенаправляем на страницу списка задач
+                window.location.href = "{% url 'board_detail' board.id %}";
+            } else {
+                alert('Ошибка при удалении: ' + data.error);
+            }
+        })
+        .catch(error => alert('Ошибка: ' + error));
     });
 </script>
 

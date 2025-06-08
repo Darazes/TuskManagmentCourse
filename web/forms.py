@@ -73,3 +73,7 @@ class StatusForm(forms.ModelForm):
         widgets = {
             'status': forms.Select(attrs={'id': 'id_status'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].empty_label = None

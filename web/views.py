@@ -137,6 +137,26 @@ def add_task_list(request):
     return JsonResponse({'error': 'Invalid method'}, status=405)
 
 @require_POST
+def delete_task(request):
+    import json
+    try:
+        data = json.loads(request.body)
+        task_id = data.get('task_id')
+        if not task_id:
+            return JsonResponse({'success': False, 'error': 'Не передан task_id'})
+
+        try:
+            task = Task.objects.get(id=task_id)
+        except Task.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Задача не найдена'})
+
+        task.delete()
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
 def delete_list(request):
     import json
     try:
