@@ -1,16 +1,33 @@
+from django.conf import settings
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
-from web.forms import LoginForm, RegisterForm
+from web.forms import LoginForm, RegisterForm, StatusForm
 from web.models import *
 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
 
-@login_required
+
+def task_detail_view(request, board_id, id):
+
+    board = get_object_or_404(Board, id=board_id, user=request.user)
+    task = get_object_or_404(Task, id=id, list__board=board)
+
+    if request.method == 'POST':
+        form = StatusForm(request.POST, instance=task)
+        if form.is_valid():
+            form.save()
+    else:
+        form = StatusForm(instance=task)
+
+    return render(request, 'tasks/task_detail.html', {'form': form,'board': board, 'task': task})
+
+@login_required(login_url='login/')
 def boards_list(request):
     boards = Board.objects.filter(user=request.user)
     return render(request, 'boards/board_list.html', {'boards': boards})
@@ -203,21 +220,26 @@ def loginPage(request):
     return render(request, 'user/login.html', {'form': form})
 
 def registerPage(request):
-
-    # инициализируем объект формы
     form = RegisterForm()
 
     if request.method == 'POST':
-        # заполняем объект данными формы, если она была отправлена
         form = RegisterForm(request.POST)
-
         if form.is_valid():
-            # если форма валидна - создаем нового пользователя
             user = form.save(commit=False)
             user.set_password(form.cleaned_data['password'])
             user.save()
 
+            # Отправка приветственного письма
+            send_mail(
+                subject='Добро пожаловать!',
+                message='Спасибо за регистрацию на нашем сайте.',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
             return redirect('login')
+
     return render(request, 'user/registration.html', {'form': form})
 
 

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}
+	Задача {{ task.title }}
+{% endblock %}
+{% block content %}
+<body>
+<h1>Задача {{ task.title }}</h1>
+
+
+    <ul>
+        <li><strong>Описание задачи:</strong> {{ task.description|linebreaksbr }}</li>
+        <li><strong style="float: left">Статус:</strong>
+            <form method="post" id="statusForm">
+                {% csrf_token %}
+                {{ form.status }}
+            </form></li>
+        <li><strong>Date Started:</strong> {{ task.dateStarted|date:"Y-m-d H:i" }}</li>
+        <li><strong>Date Ended:</strong> {{ task.dateEnded|date:"Y-m-d H:i" }}</li>
+    </ul>
+
+
+<a href="{% url 'board_detail' board.id %}">← Назад к списку задач</a>
+
+<script>
+    document.getElementById('id_status').addEventListener('change', function() {
+        document.getElementById('statusForm').submit();
+    });
+</script>
+
+</body>
+{% endblock %}

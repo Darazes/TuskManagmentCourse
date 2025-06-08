@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block title %}
-	Home Page
+	Доска {{ board.title }}
 {% endblock %}
 {% block content %}
 <body>
@@ -13,12 +13,14 @@
         <h2 class="list_title">{{ list.title }}</h2>
         <button class="delete-list-btn" data-list-id="{{ list.id }}">Удалить список</button>
         <div class="task-list" id="task-list-{{ list.id }}">
+
             {% for task in list.tasks.all %}
-              <div class="task" draggable="true" id="task-{{ task.id }}" style="border: 1px solid #999; margin: 5px; padding: 5px;">
+              <div onclick="window.location.href='{% url 'task_detail' board.id task.id %}'" class="task" draggable="true" id="task-{{ task.id }}" style="border: 1px solid #999; margin: 5px; padding: 5px; cursor:pointer;">
                 <strong>{{ task.title }}</strong><br>
                 {{ task.description }}
               </div>
             {% endfor %}
+
         </div>
         <button class="add-task">Добавить карточку</button>
       </div>
@@ -121,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Ошибка: ' + data.error);
                 return;
             }
-            // Добавляем новую задачу в DOM
             const taskListDiv = document.getElementById('task-list-' + currentListId);
             const taskDiv = document.createElement('div');
             taskDiv.className = 'task';
@@ -130,9 +131,22 @@ document.addEventListener('DOMContentLoaded', () => {
             taskDiv.style.border = '1px solid #999';
             taskDiv.style.margin = '5px';
             taskDiv.style.padding = '5px';
-            taskDiv.innerHTML = `<strong>${title}</strong><br>${description}`;
 
-            // Инициализируем drag&drop обработчики для новой задачи
+            // Добавляем onclick атрибут для перехода на страницу задачи
+            taskDiv.setAttribute('onclick', `window.location.href = '/boards/${boardId}/${data.task_id}';`);
+            taskDiv.style.cursor = 'pointer';
+
+            // Формируем содержимое задачи через элементы
+            const strong = document.createElement('strong');
+            strong.textContent = title;
+            const br = document.createElement('br');
+            const descText = document.createTextNode(description);
+
+            taskDiv.appendChild(strong);
+            taskDiv.appendChild(br);
+            taskDiv.appendChild(descText);
+
+            // Инициализация drag&drop
             taskDiv.addEventListener('dragstart', e => {
                 draggedTask = taskDiv;
                 e.dataTransfer.effectAllowed = 'move';
@@ -146,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             taskListDiv.appendChild(taskDiv);
             updateEmptyMessage(currentListId);
-
             document.getElementById('modal').style.display = 'none';
         })
         .catch(() => {

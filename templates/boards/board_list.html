@@ -3,98 +3,116 @@
 {% load static %}
 
 {% block title %}
-	Мои доски
+  Мои доски
+{% endblock %}
+
+{% block head %}
+  <!-- Подключаем Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-{% csrf_token %}
-<div id="boards-list">
-  {% for board in boards %}
-    <div id="board-{{ board.id }}">
-      <a href="{% url 'board_detail' board.id %}">{{ board.title }}</a>
-      <button class="delete-board-btn" data-board-id="{{ board.id }}" 
-              style="color:lightcoral; margin-left:10px;">Удалить</button>
-    </div>
-  {% endfor %}
-</div>
-    
-<button id="openModalBtn">Создать новую доску</button>
-    
-<div id="myModal" class="modal" style="display:none; position: fixed; z-index: 1; left:0; top:0; width:100%; height:100%; overflow:auto; background-color: rgba(0,0,0,0.4);">
-  <div class="modal-content" style="background-color:#fefefe; margin:15% auto; padding:20px; border:1px solid #888; width:300px;">
-    <span id="closeModalBtn" style="color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
-    <h2>Создать новую доску</h2>
+<div class="container mt-4">
 
-    <form method="POST" action="{% url 'create_board' %}">
-      {% csrf_token %}
-      <label for="title">Название доски:</label><br>
-      <input type="text" id="title" name="title" required><br><br>
-      <button type="submit">Создать</button>
-    </form>
+  <h1>Мои доски</h1>
+
+  <div id="boards-list" class="mb-3">
+    {% for board in boards %}
+      <div id="board-{{ board.id }}" class="d-flex align-items-center mb-2">
+        <a href="{% url 'board_detail' board.id %}" class="flex-grow-1">{{ board.title }}</a>
+        <button class="btn btn-sm btn-outline-danger delete-board-btn" data-board-id="{{ board.id }}">
+          Удалить
+        </button>
+      </div>
+    {% empty %}
+      <p>У вас пока нет досок.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Кнопка открытия модалки -->
+  <button id="openModalBtn" class="btn btn-primary">Создать новую доску</button>
+
+  <!-- Модальное окно создания доски -->
+  <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel">Создать новую доску</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+
+        <div class="modal-body">
+          <form method="POST" action="{% url 'create_board' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="title" class="form-label">Название доски</label>
+              <input type="text" id="title" name="title" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Создать</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
   </div>
 </div>
+{% endblock %}
 
-<script>
-  const modal = document.getElementById('myModal');
-  const openBtn = document.getElementById('openModalBtn');
-  const closeBtn = document.getElementById('closeModalBtn');
+{% block scripts %}
+  <!-- Подключаем Bootstrap JS Bundle с Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  openBtn.onclick = function() {
-    modal.style.display = "block";
-  }
-  closeBtn.onclick = function() {
-    modal.style.display = "none";
-  }
-  window.onclick = function(event) {
-    if(event.target == modal) {
-      modal.style.display = "none";
-    }
-  }
-  
-  function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      // Проверяем, начинается ли cookie с нужного имени
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
+  <script>
+    // Создаем объект модалки Bootstrap
+    const myModal = new bootstrap.Modal(document.getElementById('myModal'));
 
-document.querySelectorAll('.delete-board-btn').forEach(btn => {
-  btn.addEventListener('click', e => {
-    const boardId = e.target.getAttribute('data-board-id');
+    // Открытие модалки по кнопке
+    document.getElementById('openModalBtn').addEventListener('click', () => {
+      myModal.show();
+    });
 
-    if (confirm('Вы уверены, что хотите удалить эту доску? Все задачи в ней будут удалены!')) {
-      fetch('/board/delete/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({ board_id: boardId })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          const boardDiv = document.getElementById('board-' + boardId);
-          if (boardDiv) boardDiv.remove();
-        } else {
-          alert('Ошибка при удалении доски: ' + (data.error || 'неизвестная ошибка'));
+    // Функция получения CSRF токена из cookie (для fetch)
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;}
         }
-      })
-      .catch(() => alert('Ошибка при запросе на удаление доски'));
+      }
+      return cookieValue;
     }
-  });
-});
 
-  
-</script>
-    
+    // Обработчики кнопок удаления досок
+    document.querySelectorAll('.delete-board-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const boardId = e.target.getAttribute('data-board-id');
+
+        if (confirm('Вы уверены, что хотите удалить эту доску? Все задачи в ней будут удалены!')) {
+          fetch('/board/delete/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ board_id: boardId })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              const boardDiv = document.getElementById('board-' + boardId);
+              if (boardDiv) boardDiv.remove();
+            } else {
+              alert('Ошибка при удалении доски: ' + (data.error || 'неизвестная ошибка'));
+            }
+          })
+          .catch(() => alert('Ошибка при запросе на удаление доски'));
+        }
+      });
+    });
+  </script>
 {% endblock %}

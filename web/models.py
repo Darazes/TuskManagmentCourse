@@ -19,11 +19,27 @@ class List(models.Model):
         return self.title
 
 
+class Status(models.Model):
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name_plural = "Statuses"
+
+def get_default_status():
+    return Status.objects.get(name="Не начата").id
+
 class Task(models.Model):
     list = models.ForeignKey(List, related_name='tasks', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     position = models.PositiveIntegerField(default=0)
+    status = models.ForeignKey(Status, on_delete=models.SET_NULL, null=True, blank=True, default=get_default_status())
+    dateStarted = models.DateTimeField(auto_now_add=True)
+    dateEnded = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+
