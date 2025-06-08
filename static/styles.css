@@ -50,3 +50,18 @@
     margin: 5px;
 
 }
+
+@media (max-width: 1200px)
+{
+    .task-buttons button{
+    margin: 5px;
+    }
+}
+
+
+@media (max-width: 750px)
+{
+    .lists{
+    display: inline-block;
+}
+}

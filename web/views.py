@@ -38,9 +38,9 @@ def create_board(request):
         title = request.POST.get('title')
         if title:
             Board.objects.create(title=title, user=request.user)
-        return redirect('/')
+        return redirect('/boards')
     else:
-        return redirect('/')
+        return redirect('/boards')
 
 @login_required
 def delete_board(request):
@@ -250,5 +250,8 @@ def me(request):
 
 def doLogout(request):
     logout(request)
-    return redirect('login')
+    return redirect('/')
 
+
+def main(request):
+    return render(request, 'info/main.html', )
