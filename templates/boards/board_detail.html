@@ -6,6 +6,10 @@
 	Доска {{ board.title }}
 {% endblock %}
 {% block content %}
+
+<input type="text" id="task-search" class="task-search" placeholder="Поиск задач..." autocomplete="off"/>
+<div id="task-results" class="task-results"></div>
+
 <body>
 <div class="div_title">
     <h1 class="board_title" id="boardTitle" style="cursor: pointer;">{{ board.title }}</h1>
@@ -32,7 +36,7 @@
       </div>
 
     {% empty %}
-      <p>Нет списков</p>
+      <p>Нет списков задач</p>
     {% endfor %}
 </div>
 
@@ -458,6 +462,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         return cookieValue;
+    }
+});
+
+const searchInput = document.getElementById('task-search');
+const resultsBox = document.getElementById('task-results');
+
+searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    if (!query) {
+        resultsBox.style.display = 'none';
+        resultsBox.innerHTML = '';
+        return;
+    }
+    fetch(`/tasks/search/?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length) {
+                resultsBox.innerHTML = data.map(task =>
+                    `<div class="result-item" data-id="${task.id}" data-board-id="${task.boardId}" style="padding:5px; cursor:pointer;">${task.title}</div>`
+                ).join('');
+                resultsBox.style.display = 'block';
+            } else {
+                resultsBox.innerHTML = '<div style="padding:5px;">Ничего не найдено</div>';
+                resultsBox.style.display = 'block';
+            }
+        });
+});
+
+resultsBox.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('result-item')) {
+        const taskId = e.target.dataset.id;
+        const boardId = e.target.dataset.boardId;
+        if (boardId && taskId) {
+            window.location.href = `/boards/${boardId}/${taskId}/`;
+        }
     }
 });
 </script>

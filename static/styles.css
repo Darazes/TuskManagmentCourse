@@ -15,6 +15,7 @@
 
 .task-buttons{
     text-align: center;
+    margin-top: 10px;
 }
 
 .list_boards{
@@ -40,7 +41,7 @@
     border: 2px solid #999; margin: 5px;
     border-radius: 10px;
     cursor:pointer;
-    padding: 10px 5px;
+    padding: 10px 20px;
 }
 
 .empty-message{
@@ -49,6 +50,21 @@
     border-radius: 10px;
     margin: 5px;
 
+}
+
+.task-search{
+    width: 100%;
+    padding: 10px;
+}
+
+.task-results{
+    border:1px solid #ccc;
+    max-height: 150px;
+    overflow-y: auto;
+    display: none;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
 }
 
 @media (max-width: 1200px)

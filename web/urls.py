@@ -1,6 +1,7 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 from . import views
+from .views import TaskSearchView
 
 urlpatterns = [
     path('', views.main, name='main'),
@@ -9,6 +10,7 @@ urlpatterns = [
     path('board/<int:board_id>/', views.board_detail, name='board_detail'),
     path('boards/<int:board_id>/update_title/', views.update_board_title, name='update_board_title'),
     path('boards/<int:board_id>/<int:task_id>/', views.task_detail_view, name='task_detail_view'),
+    path('tasks/search/', TaskSearchView.as_view(), name='task_search'),
     path('board/delete/', views.delete_board, name='delete_board'),
     path('update-task-position/', views.update_task_position, name='update_task_position'),
     path('add-task/', views.add_task, name='add_task'),

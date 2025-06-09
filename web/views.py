@@ -6,6 +6,7 @@ from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.shortcuts import render, get_object_or_404, redirect
+from django.views import View
 from django.views.decorators.http import require_POST, require_http_methods
 
 from web.forms import LoginForm, RegisterForm, StatusForm, UploadFileForm, ContactForm
@@ -85,6 +86,17 @@ def delete_file(request):
         return JsonResponse({'success': False, 'error': 'Неверный формат данных'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+class TaskSearchView(View):
+    def get(self, request):
+        query = request.GET.get('q', '')
+        if query:
+            tasks = Task.objects.filter(title__icontains=query)[:10]  # ограничим 10
+            results = [{'id': task.id, 'boardId': task.list.board.id, 'title': task.title} for task in tasks]
+        else:
+            results = []
+        return JsonResponse(results, safe=False)
 
 @login_required(login_url='login/')
 def boards_list(request):
