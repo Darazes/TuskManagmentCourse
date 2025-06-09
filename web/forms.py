@@ -77,3 +77,9 @@ class StatusForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['status'].empty_label = None
+
+
+class UploadFileForm(forms.ModelForm):
+    class Meta:
+        model = TaskFile
+        fields = ['file']  # или другие поля

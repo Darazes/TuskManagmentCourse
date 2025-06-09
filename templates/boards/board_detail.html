@@ -18,7 +18,7 @@
           <div class="task-list" id="task-list-{{ list.id }}">
 
               {% for task in list.tasks.all %}
-                <div onclick="window.location.href='{% url 'task_detail' board.id task.id %}'" class="task" draggable="true" id="task-{{ task.id }}">
+                <div onclick="window.location.href='{% url 'task_detail_view' board.id task.id %}'" class="task" draggable="true" id="task-{{ task.id }}">
                   <strong>{{ task.title }}</strong><br>
                   {{ task.description }}
                 </div>

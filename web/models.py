@@ -43,3 +43,8 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
+
+class TaskFile(models.Model):
+    task = models.ForeignKey(Task, related_name='files', on_delete=models.CASCADE)
+    file = models.FileField(upload_to='task_files/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)

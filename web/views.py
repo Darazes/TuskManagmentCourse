@@ -1,31 +1,90 @@
+import os
+
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 
-from web.forms import LoginForm, RegisterForm, StatusForm
+from web.forms import LoginForm, RegisterForm, StatusForm, UploadFileForm
 from web.models import *
 
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.http import JsonResponse
 import json
 
 
-def task_detail_view(request, board_id, id):
-
+@require_http_methods(["GET", "POST"])
+def task_detail_view(request, board_id, task_id):
     board = get_object_or_404(Board, id=board_id, user=request.user)
-    task = get_object_or_404(Task, id=id, list__board=board)
+    task = get_object_or_404(Task, id=task_id, list__board=board)
 
-    if request.method == 'POST':
-        form = StatusForm(request.POST, instance=task)
-        if form.is_valid():
-            form.save()
-    else:
-        form = StatusForm(instance=task)
+    status_form = StatusForm(instance=task)
+    file_form = UploadFileForm()
 
-    return render(request, 'tasks/task_detail.html', {'form': form,'board': board, 'task': task})
+    if request.method == "POST":
+        if 'status_submit' in request.POST:
+            status_form = StatusForm(request.POST, instance=task)
+            if status_form.is_valid():
+                status_form.save()
+                messages.success(request, "Статус задачи обновлён.")
+                return redirect('task_detail_view', board_id=board_id, task_id=task_id)
+            else:
+                messages.error(request, "Ошибка обновления статуса.")
+        elif 'file_submit' in request.POST:
+            file_form = UploadFileForm(request.POST, request.FILES)
+            if file_form.is_valid():
+                task_file = file_form.save(commit=False)
+                task_file.task = task
+                task_file.save()
+                messages.success(request, "Файл успешно загружен.")
+                return redirect('task_detail_view', board_id=board_id, task_id=task_id)
+            else:
+                messages.error(request, f"Ошибка загрузки файла: {file_form.errors.as_text()}")
+
+    return render(request, 'tasks/task_detail.html', {
+        'board': board,
+        'task': task,
+        'status_form': status_form,
+        'file_form': file_form,
+    })
+
+@require_POST
+@login_required
+@csrf_protect
+def delete_file(request):
+    try:
+        data = json.loads(request.body)
+        file_id = data.get('file_id')
+        if not file_id:
+            return JsonResponse({'success': False, 'error': 'ID файла не передан'})
+
+        # Получаем объект файла
+        file_obj = TaskFile.objects.filter(id=file_id).first()
+        if not file_obj:
+            return JsonResponse({'success': False, 'error': 'Файл не найден'})
+
+        # Проверка прав доступа - пример, что файл принадлежит пользователю или задаче пользователя
+        # Замените логику проверки доступа согласно вашей модели данных
+        if file_obj.task.list.board.user != request.user:
+            return JsonResponse({'success': False, 'error': 'Нет прав на удаление этого файла'})
+
+        # Удаляем файл из файловой системы
+        file_path = file_obj.file.path
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+        # Удаляем запись из БД
+        file_obj.delete()
+
+        return JsonResponse({'success': True})
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Неверный формат данных'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required(login_url='login/')
 def boards_list(request):
