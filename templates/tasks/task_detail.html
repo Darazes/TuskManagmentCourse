@@ -28,7 +28,7 @@
   <input type="hidden" name="file_submit" value="1" />
 </form>
 
-<h3>Прикрепленные файлы:</h3>
+<h3>Файлы задачи:</h3>
 <ul id="filesList">
     {% for f in task.files.all %}
         <li data-file-id="{{ f.id }}">
@@ -36,12 +36,12 @@
           <button class="btn btn-sm btn-outline-danger delete-file-btn" data-file-id="{{ f.id }}">Удалить</button>
         </li>
     {% empty %}
-        <li>Файлы не загружены</li>
+        <li style="list-style-type: none;">Файлы не загружены</li>
     {% endfor %}
 </ul>
 
 {% if messages %}
-  <ul>
+  <ul style="list-style-type: none;">
     {% for message in messages %}
       <li {% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</li>
     {% endfor %}
