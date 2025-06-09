@@ -82,7 +82,7 @@ class StatusForm(forms.ModelForm):
 class UploadFileForm(forms.ModelForm):
     class Meta:
         model = TaskFile
-        fields = ['file']  # или другие поля
+        fields = ['file']
 
 class ContactForm(forms.Form):
     name = forms.CharField(label='Имя', max_length=100)

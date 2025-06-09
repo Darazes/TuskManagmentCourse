@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         body: JSON.stringify({
                   title: title,
-                  board_id: boardId  // Обязательно передаём board_id
+                  board_id: boardId
               })
       })
       .then(response => response.json())
@@ -216,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(data.error) {
           alert('Ошибка: ' + data.error);
         } else {
-          //alert('Список добавлен: ' + data.title);
           modal.style.display = 'none';
           document.getElementById('taskListTitle').value = '';
           location.reload();
@@ -234,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-CSRFToken': getCookie('csrftoken')  // функция getCookie должна быть определена
+              'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify({ list_id: listId })
           })
@@ -277,7 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
           newTitleEl.textContent = newTitle;
           newTitleEl.style.cursor = 'pointer';
 
-          // Навешиваем обработчик клика заново
           newTitleEl.addEventListener('click', handler);
 
           input.replaceWith(newTitleEl);
@@ -474,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
 //Получение статусов
 const statusFilter = document.getElementById('status-filter');
 
-fetch('/statuses/list/')  // URL вашего эндпоинта для получения статусов
+fetch('/statuses/list/')
   .then(response => response.json())
   .then(statuses => {
     statuses.forEach(status => {

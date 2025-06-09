@@ -71,7 +71,6 @@ def delete_file(request):
             return JsonResponse({'success': False, 'error': 'Файл не найден'})
 
         # Проверка прав доступа - пример, что файл принадлежит пользователю или задаче пользователя
-        # Замените логику проверки доступа согласно вашей модели данных
         if file_obj.task.list.board.user != request.user:
             return JsonResponse({'success': False, 'error': 'Нет прав на удаление этого файла'})
 
@@ -258,13 +257,13 @@ def delete_list(request):
         except List.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Список не найден'})
 
-        task_list.delete()  # удалит список и связанные задачи, если установлено каскадное удаление
+        task_list.delete()
         return JsonResponse({'success': True})
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
-@csrf_exempt  # отключаем CSRF для простоты, но лучше настроить CSRF-токен в реальных проектах
+@csrf_exempt
 def update_title(request):
     if request.method == 'POST':
         try:
@@ -285,7 +284,7 @@ def update_title(request):
 
 
 @require_POST
-@csrf_exempt  # Только если вы не используете JS с CSRF токеном в headers!
+@csrf_exempt
 def update_board_title(request, board_id):
     try:
         data = json.loads(request.body)
@@ -321,26 +320,18 @@ def contact_view(request):
 
 def loginPage(request):
 
-    # инициализируем объект класса формы
     form = LoginForm()
 
-    # обрабатываем случай отправки формы на этот адрес
     if request.method == 'POST':
 
-        # заполянем объект данными, полученными из запроса
         form = LoginForm(request.POST)
 
-        # проверяем валидность формы
         if form.is_valid():
-            # пытаемся авторизовать пользователя
             user = authenticate(request, username=form.cleaned_data['username'], password=form.cleaned_data['password'])
             if user is not None:
-                # если существует пользователь с таким именем и паролем,
-                # то сохраняем авторизацию и делаем редирект
                 login(request, user)
                 return redirect('/')
             else:
-                # иначе возвращаем ошибку
                 form.add_error(None, 'Неверные данные!')
 
     return render(request, 'user/login.html', {'form': form})
