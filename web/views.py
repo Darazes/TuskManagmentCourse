@@ -16,6 +16,9 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.http import JsonResponse
 import json
 
+def statuses_list(request):
+    statuses = Status.objects.all().values('id', 'name')
+    return JsonResponse(list(statuses), safe=False)
 
 @require_http_methods(["GET", "POST"])
 def task_detail_view(request, board_id, task_id):
@@ -90,12 +93,26 @@ def delete_file(request):
 
 class TaskSearchView(View):
     def get(self, request):
-        query = request.GET.get('q', '')
+        query = request.GET.get('q', '').strip()
+        status_id = request.GET.get('status', '').strip()
+
+        tasks = Task.objects.all()
+
         if query:
-            tasks = Task.objects.filter(title__icontains=query)[:10]  # ограничим 10
-            results = [{'id': task.id, 'boardId': task.list.board.id, 'title': task.title} for task in tasks]
-        else:
-            results = []
+            tasks = tasks.filter(title__icontains=query)
+
+        if status_id:
+            tasks = tasks.filter(status_id=status_id)
+
+        tasks = tasks.select_related('status', 'list__board')[:10]
+
+        results = [{
+            'id': task.id,
+            'boardId': task.list.board.id,
+            'title': task.title,
+            'status_name': task.status.name if task.status else None,
+        } for task in tasks]
+
         return JsonResponse(results, safe=False)
 
 @login_required(login_url='login/')

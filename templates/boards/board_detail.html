@@ -7,7 +7,13 @@
 {% endblock %}
 {% block content %}
 
-<input type="text" id="task-search" class="task-search" placeholder="Поиск задач..." autocomplete="off"/>
+<div class="filters-container">
+  <input type="text" id="task-search" class="task-search" placeholder="Поиск задач..." autocomplete="off" />
+  <select id="status-filter" class="status-filter">
+    <option value="">Все статусы</option>
+  </select>
+</div>
+
 <div id="task-results" class="task-results"></div>
 
 <body>
@@ -465,39 +471,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+//Получение статусов
+const statusFilter = document.getElementById('status-filter');
+
+fetch('/statuses/list/')  // URL вашего эндпоинта для получения статусов
+  .then(response => response.json())
+  .then(statuses => {
+    statuses.forEach(status => {
+      const option = document.createElement('option');
+      option.value = status.id;
+      option.textContent = status.name;
+      statusFilter.appendChild(option);
+    });
+  });
+
+//Поиск задач
 const searchInput = document.getElementById('task-search');
 const resultsBox = document.getElementById('task-results');
 
-searchInput.addEventListener('input', function() {
-    const query = this.value.trim();
-    if (!query) {
-        resultsBox.style.display = 'none';
-        resultsBox.innerHTML = '';
-        return;
-    }
-    fetch(`/tasks/search/?q=${encodeURIComponent(query)}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.length) {
-                resultsBox.innerHTML = data.map(task =>
-                    `<div class="result-item" data-id="${task.id}" data-board-id="${task.boardId}" style="padding:5px; cursor:pointer;">${task.title}</div>`
-                ).join('');
-                resultsBox.style.display = 'block';
-            } else {
-                resultsBox.innerHTML = '<div style="padding:5px;">Ничего не найдено</div>';
-                resultsBox.style.display = 'block';
-            }
-        });
-});
+function fetchTasks() {
+  const query = searchInput.value.trim();
+  const statusId = statusFilter.value;
+
+  if (!query && !statusId) {
+    resultsBox.style.display = 'none';
+    resultsBox.innerHTML = '';
+    return;
+  }
+
+  // Формируем URL с параметрами для поиска
+  let url = `/tasks/search/?`;
+  if (query) url += `q=${encodeURIComponent(query)}&`;
+  if (statusId) url += `status=${encodeURIComponent(statusId)}`;
+
+  fetch(url)
+    .then(resp => resp.json())
+    .then(data => {
+      if (data.length) {
+        resultsBox.innerHTML = data.map(task =>
+          `<div class="result-item" data-id="${task.id}" data-board-id="${task.boardId}" style="padding:5px; cursor:pointer;">
+            ${task.title} (${task.status_name || 'Без статуса'})
+          </div>`
+        ).join('');
+        resultsBox.style.display = 'block';
+      } else {
+        resultsBox.innerHTML = '<div style="padding:5px;">Ничего не найдено</div>';
+        resultsBox.style.display = 'block';
+      }
+    });
+}
+
+// Обработчики событий для поля поиска и фильтра статуса
+searchInput.addEventListener('input', fetchTasks);
+statusFilter.addEventListener('change', fetchTasks);
 
 resultsBox.addEventListener('click', function(e) {
-    if (e.target && e.target.classList.contains('result-item')) {
-        const taskId = e.target.dataset.id;
-        const boardId = e.target.dataset.boardId;
-        if (boardId && taskId) {
-            window.location.href = `/boards/${boardId}/${taskId}/`;
-        }
+  if (e.target && e.target.classList.contains('result-item')) {
+    const taskId = e.target.dataset.id;
+    const boardId = e.target.dataset.boardId;
+    if (boardId && taskId) {
+      window.location.href = `/boards/${boardId}/${taskId}/`;
     }
+  }
 });
 </script>
 {% endblock %}
