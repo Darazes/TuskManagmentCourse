@@ -1,4 +1,7 @@
 import os
+import string
+
+from django.utils import timezone
 
 from django.conf import settings
 from django.contrib import messages
@@ -13,7 +16,7 @@ from web.forms import LoginForm, RegisterForm, StatusForm, UploadFileForm, Conta
 from web.models import *
 
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest
 import json
 
 def statuses_list(request):
@@ -28,11 +31,45 @@ def task_detail_view(request, board_id, task_id):
     status_form = StatusForm(instance=task)
     file_form = UploadFileForm()
 
+    # Обработка AJAX запроса для изменения title/description
+    if request.method == "POST" and request.content_type == "application/json":
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Некорректные данные")
+
+        title = data.get('title')
+        description = data.get('description')
+
+        updated = False
+
+        if title is not None:
+            task.title = title.strip()
+            updated = True
+
+        if description is not None:
+            task.description = description.strip()
+            updated = True
+
+        if updated:
+            task.save()
+            return JsonResponse({'status': 'ok'})
+
+        return JsonResponse({'status': 'no changes'})
+
+    # Существующая логика POST формы (статус и файл)
     if request.method == "POST":
         if 'status_submit' in request.POST:
             status_form = StatusForm(request.POST, instance=task)
             if status_form.is_valid():
-                status_form.save()
+                updated_task = status_form.save(commit=False)
+                if updated_task.status == "Закончена":
+                    if not updated_task.dateEnded:
+                        updated_task.dateEnded = timezone.now()
+                else:
+                    updated_task.dateEnded = None
+                updated_task.save()
+
                 messages.success(request, "Статус задачи обновлён.")
                 return redirect('task_detail_view', board_id=board_id, task_id=task_id)
             else:
@@ -191,7 +228,9 @@ def add_task(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         title = data.get('title', '').strip()
-        description = data.get('description', '').strip()
+        if data.get('description', '').strip() == "":
+            description = "Пустое описание"
+        else: description = data.get('description', '').strip()
         list_id = data.get('list_id')
         if not title or not list_id:
             return JsonResponse({'error': 'Не переданы обязательные данные'}, status=400)

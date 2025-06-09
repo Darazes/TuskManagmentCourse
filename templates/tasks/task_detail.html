@@ -6,19 +6,21 @@
 	Задача {{ task.title }}
 {% endblock %}
 {% block content %}
-<h1>Задача {{ task.title }}</h1>
+<h1 id="taskTitle" style="cursor:pointer;">{{ task.title }}</h1>
+<textarea id="titleInput" style="display:none; width: 100%; font-size: 2em; margin-bottom:10px;"></textarea>
 
-<ul>
-    <li><strong>Описание задачи:</strong> {{ task.description|linebreaksbr }}</li>
-    <li><strong style="float: left">Статус:</strong>
+<ul style="list-style-type: none;">
+    <li><p><strong>Описание задачи</strong>:</p>
+    <div id="taskDescription" style="cursor:pointer;">{{ task.description|linebreaksbr }}</div>
+    <textarea id="descriptionInput" style="display:none; width:100%; height:100px;"></textarea></li>
+    <li><strong style="float: left">Статус</strong>
         <form method="post" id="statusForm">
             {% csrf_token %}
             {{ status_form.status }}
             <input type="hidden" name="status_submit" value="1" />
         </form>
     </li>
-    <li><strong>Date Started:</strong> {{ task.dateStarted|date:"Y-m-d H:i" }}</li>
-    <li><strong>Date Ended:</strong> {{ task.dateEnded|date:"Y-m-d H:i" }}</li>
+    <li><strong>Дата создания задачи</strong> {{ task.dateStarted|date:"d.m.Y H:i" }}</li>
 </ul>
 
 <h2>Прикрепить файл</h2>
@@ -64,78 +66,180 @@ background: rgba(0,0,0,0.5); align-items:center; justify-content:center;">
 </div>
 
 <script>
-    document.getElementById('id_status').addEventListener('change', function() {
-        document.getElementById('statusForm').submit();
-    });
+document.getElementById('id_status').addEventListener('change', function() {
+    const form = document.getElementById('statusForm');
+    if (!form.querySelector('input[name="status_submit"]')) {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'status_submit';
+        hidden.value = '1';
+        form.appendChild(hidden);
+    }
+    form.submit();
+});
 
-    document.querySelector('#fileForm input[type="file"]').addEventListener('change', function() {
-        document.getElementById('fileForm').submit();
-    });
+document.querySelector('#fileForm input[type="file"]').addEventListener('change', function() {
+    document.getElementById('fileForm').submit();
+});
 
-    document.getElementById('deleteTaskBtn').addEventListener('click', function() {
-        if (!confirm('Вы уверены, что хотите удалить эту задачу?')) return;
+document.getElementById('deleteTaskBtn').addEventListener('click', function() {
+    if (!confirm('Вы уверены, что хотите удалить эту задачу?')) return;
 
-        fetch("{% url 'delete_task' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({task_id: {{ task.id }}})
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Перенаправляем на страницу списка задач
-                window.location.href = "{% url 'board_detail' board.id %}";
-            } else {
-                alert('Ошибка при удалении: ' + data.error);
-            }
-        })
-        .catch(error => alert('Ошибка: ' + error));
-    });
-
-    const deleteFileModal = document.getElementById('deleteFileModal');
-  let fileIdToDelete = null;
-
-  document.querySelectorAll('.delete-file-btn').forEach(button => {
-    button.addEventListener('click', () => {
-      fileIdToDelete = button.getAttribute('data-file-id');
-      deleteFileModal.style.display = 'flex';
-    });
-  });
-
-  document.getElementById('cancelDeleteFile').addEventListener('click', () => {
-    deleteFileModal.style.display = 'none';
-    fileIdToDelete = null;
-  });
-
-  document.getElementById('confirmDeleteFile').addEventListener('click', () => {
-    if (!fileIdToDelete) return;
-
-    fetch("{% url 'delete_file' %}", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token }}'
-      },
-      body: JSON.stringify({file_id: fileIdToDelete})
+    fetch("{% url 'delete_task' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({task_id: {{ task.id }}})
     })
     .then(response => response.json())
     .then(data => {
-      if (data.success) {
-        // Удаляем элемент из списка
-        const fileElem = document.querySelector(`li[data-file-id="${fileIdToDelete}"]`);
-        if (fileElem) fileElem.remove();
-        deleteFileModal.style.display = 'none';
-        fileIdToDelete = null;
-      } else {
-        alert('Ошибка при удалении файла: ' + data.error);
-      }
+        if (data.success) {
+            window.location.href = "{% url 'board_detail' board.id %}";
+        } else {
+            alert('Ошибка при удалении: ' + data.error);
+        }
+    })
+    .catch(error => alert('Ошибка: ' + error));
+});
+
+const deleteFileModal = document.getElementById('deleteFileModal');
+let fileIdToDelete = null;
+
+document.querySelectorAll('.delete-file-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        fileIdToDelete = button.getAttribute('data-file-id');
+        deleteFileModal.style.display = 'flex';
+    });
+});
+
+document.getElementById('cancelDeleteFile').addEventListener('click', () => {
+    deleteFileModal.style.display = 'none';
+    fileIdToDelete = null;
+});
+
+document.getElementById('confirmDeleteFile').addEventListener('click', () => {
+    if (!fileIdToDelete) return;
+
+    fetch("{% url 'delete_file' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({file_id: fileIdToDelete})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const fileElem = document.querySelector(`li[data-file-id="${fileIdToDelete}"]`);
+            if (fileElem) fileElem.remove();
+            deleteFileModal.style.display = 'none';
+            fileIdToDelete = null;
+        } else {
+            alert('Ошибка при удалении файла: ' + data.error);
+        }
     })
     .catch(() => {
-      alert('Ошибка соединения');
+        alert('Ошибка соединения');
     });
-  });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    const titleDisplay = document.getElementById('taskTitle');
+    const titleInput = document.getElementById('titleInput');
+
+    const descDisplay = document.getElementById('taskDescription');
+    const descInput = document.getElementById('descriptionInput');
+
+    // Создаем элемент для отображения ошибки под textarea описания
+    const errorMessage = document.createElement('div');
+    errorMessage.style.color = 'red';
+    errorMessage.style.marginTop = '5px';
+    errorMessage.style.display = 'none';
+    errorMessage.textContent = 'Описание не может быть пустым.';
+    descInput.parentNode.insertBefore(errorMessage, descInput.nextSibling);
+
+    // Клик по заголовку - переключение в режим редактирования
+    titleDisplay.addEventListener('click', () => {
+        titleInput.value = titleDisplay.textContent.trim();
+        titleDisplay.style.display = 'none';titleInput.style.display = 'block';
+        titleInput.focus();
+    });
+
+    // Сохранение заголовка при потере фокуса или Enter
+    titleInput.addEventListener('blur', saveTitle);
+    titleInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            titleInput.blur();
+        }
+    });
+
+    function saveTitle() {
+        saveField('title', titleInput.value).then(success => {
+            if (success) {
+                titleDisplay.textContent = titleInput.value;
+            }
+            titleDisplay.style.display = 'block';
+            titleInput.style.display = 'none';
+        });
+    }
+
+    // Клик по описанию - переключение в режим редактирования
+    descDisplay.addEventListener('click', () => {
+        descInput.value = descDisplay.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim();
+        errorMessage.style.display = 'none';
+        descDisplay.style.display = 'none';
+        descInput.style.display = 'block';
+        descInput.focus();
+    });
+
+    // Валидация и сохранение описания при потере фокуса
+    descInput.addEventListener('blur', () => {
+        let value = descInput.value.trim();
+        if (!value) {
+            errorMessage.style.display = 'block';
+            descInput.focus();
+            return;
+        }
+        errorMessage.style.display = 'none';
+        saveField('description', value).then(success => {
+            if (success) {
+                descDisplay.innerHTML = value.replace(/\n/g, '<br>');
+            }
+            descDisplay.style.display = 'block';
+            descInput.style.display = 'none';
+        });
+    });
+
+    // Функция сохранения поля через AJAX
+    async function saveField(field, value) {
+        let data = {};
+        data[field] = value;
+
+        try {
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) return true;
+            else {
+                alert('Ошибка при сохранении');
+                return false;
+            }
+        } catch(error) {
+            alert('Ошибка соединения');
+            return false;
+        }
+    }
+});
 </script>
 {% endblock %}

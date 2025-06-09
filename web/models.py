@@ -38,7 +38,6 @@ class Task(models.Model):
     position = models.PositiveIntegerField(default=0)
     status = models.ForeignKey(Status, on_delete=models.SET_NULL, null=True, blank=True, default=get_default_status())
     dateStarted = models.DateTimeField(auto_now_add=True)
-    dateEnded = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
