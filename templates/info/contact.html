@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Обратная связь - Планировщик задач{% endblock %}
+
+{% block content %}
+
+<div style="max-width: 600px; margin: 20px auto; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; font-family: Arial, sans-serif; text-align: center;">
+    <h2>О сайте</h2>
+    <p>Этот сайт создан для удобной планировки задач, позволяя эффективно организовывать и контролировать ваше время и дела.</p>
+    <p>Форма обратной связи предназначена для ваших вопросов, предложений и замечаний — это помогает нам улучшать функционал и делать сервис удобнее для вас.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+  <h1>Обратная связь</h1>
+
+  {% if messages %}
+    <div class="alert alert-success" role="alert" style="width: 100%; max-width: 500px;">
+      {% for message in messages %}
+        {{ message }}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" class="needs-validation" novalidate style="width: 100%; max-width: 500px;">
+    {% csrf_token %}
+
+    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 1rem;">
+      <div style="flex: 1; max-width: 120px; text-align: right; padding-right: 10px;">
+        {{ form.name.label_tag }}
+      </div>
+      <div style="flex: 2; text-align: left;">
+        <input style="width: 260px" type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" value="{{ form.name.value|default_if_none:'' }}">
+        {% if form.name.errors %}
+          <div style="color: red; font-size: 0.9em;">{{ form.name.errors }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 1rem;">
+      <div style="flex: 1; max-width: 120px; text-align: right; padding-right: 10px;">
+        {{ form.email.label_tag }}
+      </div>
+      <div style="flex: 2; text-align: left;">
+        <input style="width: 260px" type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default_if_none:'' }}">
+        {% if form.email.errors %}
+          <div style="color: red; font-size: 0.9em;">{{ form.email.errors }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: center; align-items: flex-start; margin-bottom: 1rem;">
+      <div style="flex: 1; max-width: 120px; text-align: right; padding-right: 10px;">
+        {{ form.message.label_tag }}
+      </div>
+      <div style="flex: 2; text-align: left;">
+        <textarea style="width: 260px; height: 200px" name="{{ form.message.name }}" id="{{ form.message.id_for_label }}">{{ form.message.value|default_if_none:'' }}</textarea>
+        {% if form.message.errors %}
+          <div style="color: red; font-size: 0.9em;">{{ form.message.errors }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <button type="submit" style="margin-top: 1rem; align-self: center;" class="btn btn-primary">Отправить</button>
+  </form>
+</div>
+{% endblock %}

@@ -17,6 +17,7 @@ urlpatterns = [
     path('delete-list/', views.delete_list, name='delete_list'),
     path('delete-task/', views.delete_task, name='delete_task'),
     path('delete-file/', views.delete_file, name='delete_file'),
+    path('contact/', views.contact_view, name='contact'),
     path('login/', views.loginPage, name='login'),
     path('register/', views.registerPage, name='register'),
     path('me/', views.me, name='me'),

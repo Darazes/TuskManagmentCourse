@@ -8,7 +8,7 @@ from django.core.mail import send_mail
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST, require_http_methods
 
-from web.forms import LoginForm, RegisterForm, StatusForm, UploadFileForm
+from web.forms import LoginForm, RegisterForm, StatusForm, UploadFileForm, ContactForm
 from web.models import *
 
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
@@ -271,6 +271,24 @@ def update_board_title(request, board_id):
 
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Неверный JSON'}, status=400)
+
+def contact_view(request):
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            # Получаем данные из формы
+            name = form.cleaned_data['name']
+            message = form.cleaned_data['message']
+            sender = form.cleaned_data['email']
+            recipient = [ 'gamebattle936@gmail.com' ]  # адрес для получения писем
+
+            # Отправляем email
+            send_mail(name, message, sender, recipient)
+            messages.success(request, 'Спасибо за ваше сообщение! Мы учётём Ваши пожелания.')
+            return redirect('/contact')
+    else:
+        form = ContactForm()
+    return render(request, 'info/contact.html', {'form': form})
 
 def loginPage(request):
 
